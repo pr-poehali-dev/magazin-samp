@@ -10,50 +10,50 @@ const Index = () => {
   const donateItems = [
     {
       id: 1,
-      title: 'VIP статус',
-      price: '500₽',
-      description: 'Эксклюзивные привилегии на сервере',
-      icon: 'Crown',
+      title: 'Готовый проект',
+      price: '1000₽',
+      description: 'Полностью готовый сервер SAMP',
+      icon: 'Package',
       gradient: 'bg-gradient-primary'
     },
     {
       id: 2,
-      title: 'Оружейный набор',
-      price: '350₽',
-      description: 'Полный арсенал оружия',
-      icon: 'Swords',
+      title: 'Мод Arizona RP',
+      price: '250₽',
+      description: 'Модификация для Arizona RP',
+      icon: 'Gamepad2',
       gradient: 'bg-gradient-secondary'
     },
     {
       id: 3,
-      title: 'Транспорт Premium',
-      price: '800₽',
-      description: 'Эксклюзивные автомобили',
-      icon: 'Car',
+      title: 'Мод Rodina RP',
+      price: '250₽',
+      description: 'Модификация для Rodina RP',
+      icon: 'Gamepad2',
       gradient: 'bg-gradient-accent'
     },
     {
       id: 4,
-      title: 'Валюта сервера',
+      title: 'Логи',
       price: '200₽',
-      description: '1.000.000$ игровых денег',
-      icon: 'DollarSign',
+      description: 'Система логирования сервера',
+      icon: 'FileText',
       gradient: 'bg-gradient-primary'
     },
     {
       id: 5,
-      title: 'Дом у моря',
-      price: '1200₽',
-      description: 'Личный дом на побережье',
-      icon: 'Home',
+      title: 'Лаунчер PC',
+      price: '200₽',
+      description: 'Лаунчер для ПК',
+      icon: 'Monitor',
       gradient: 'bg-gradient-secondary'
     },
     {
       id: 6,
-      title: 'Бизнес-пакет',
-      price: '1500₽',
-      description: 'Свой прибыльный бизнес',
-      icon: 'Briefcase',
+      title: 'Лаунчер Mobile',
+      price: '250₽',
+      description: 'Мобильный лаунчер',
+      icon: 'Smartphone',
       gradient: 'bg-gradient-accent'
     }
   ];
