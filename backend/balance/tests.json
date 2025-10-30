@@ -1,0 +1,27 @@
+{
+  "tests": [
+    {
+      "name": "Get user balance",
+      "method": "GET",
+      "path": "/?user_id=1&action=balance",
+      "expectedStatus": 200
+    },
+    {
+      "name": "Get user transactions",
+      "method": "GET",
+      "path": "/?user_id=1&action=transactions",
+      "expectedStatus": 200
+    },
+    {
+      "name": "Add funds to balance",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "user_id": 1,
+        "amount": 100,
+        "description": "Test deposit"
+      },
+      "expectedStatus": 200
+    }
+  ]
+}

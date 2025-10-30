@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -34,6 +35,7 @@ const Index = () => {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [donateItems, setDonateItems] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -145,6 +147,14 @@ const Index = () => {
                   {section === 'contacts' && 'Контакты'}
                 </button>
               ))}
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => navigate('/profile?user_id=1')}
+                title="Профиль"
+              >
+                <Icon name="User" size={20} />
+              </Button>
               <Sheet open={isCartOpen} onOpenChange={setIsCartOpen}>
                 <SheetTrigger asChild>
                   <Button variant="outline" size="icon" className="relative">
