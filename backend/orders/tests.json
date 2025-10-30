@@ -1,0 +1,30 @@
+{
+  "tests": [
+    {
+      "name": "Get all orders",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200,
+      "expectedBody": {
+        "orders": "array"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Create new order",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "customer_name": "Test User",
+        "customer_email": "test@example.com",
+        "items": [{"id": 1, "title": "Test Product", "quantity": 1}],
+        "total_price": 1000
+      },
+      "expectedStatus": 201,
+      "expectedBody": {
+        "order": "object"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -16,63 +16,46 @@ interface CartItem {
   quantity: number;
 }
 
+interface Product {
+  id: number;
+  title: string;
+  price: string;
+  description: string;
+  icon: string;
+  gradient: string;
+}
+
+const API_URL = 'https://functions.poehali.dev/663abff9-712f-46a8-bde0-86a764ef9c45';
+
 const Index = () => {
   const [activeSection, setActiveSection] = useState('home');
   const [formData, setFormData] = useState({ name: '', email: '', message: '' });
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [donateItems, setDonateItems] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
-  const donateItems = [
-    {
-      id: 1,
-      title: 'Готовый проект',
-      price: '1000₽',
-      description: 'Полностью готовый сервер SAMP',
-      icon: 'Package',
-      gradient: 'bg-gradient-primary'
-    },
-    {
-      id: 2,
-      title: 'Мод Arizona RP',
-      price: '250₽',
-      description: 'Модификация для Arizona RP',
-      icon: 'Gamepad2',
-      gradient: 'bg-gradient-secondary'
-    },
-    {
-      id: 3,
-      title: 'Мод Rodina RP',
-      price: '250₽',
-      description: 'Модификация для Rodina RP',
-      icon: 'Gamepad2',
-      gradient: 'bg-gradient-accent'
-    },
-    {
-      id: 4,
-      title: 'Логи',
-      price: '200₽',
-      description: 'Система логирования сервера',
-      icon: 'FileText',
-      gradient: 'bg-gradient-primary'
-    },
-    {
-      id: 5,
-      title: 'Лаунчер PC',
-      price: '200₽',
-      description: 'Лаунчер для ПК',
-      icon: 'Monitor',
-      gradient: 'bg-gradient-secondary'
-    },
-    {
-      id: 6,
-      title: 'Лаунчер Mobile',
-      price: '250₽',
-      description: 'Мобильный лаунчер',
-      icon: 'Smartphone',
-      gradient: 'bg-gradient-accent'
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  const fetchProducts = async () => {
+    try {
+      const response = await fetch(API_URL);
+      const data = await response.json();
+      setDonateItems(data.products);
+    } catch (error) {
+      console.error('Ошибка загрузки товаров:', error);
+      toast({
+        title: "Ошибка",
+        description: "Не удалось загрузить товары",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
     }
-  ];
+  };
 
   const faqItems = [
     {
@@ -300,8 +283,13 @@ const Index = () => {
           </h2>
           <p className="text-center text-muted-foreground mb-12">Выберите то, что вам нужно</p>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {donateItems.map((item, index) => (
+          {isLoading ? (
+            <div className="flex justify-center items-center py-20">
+              <Icon name="Loader2" className="animate-spin" size={48} />
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {donateItems.map((item, index) => (
               <Card
                 key={item.id}
                 className="border-border hover-scale animate-fade-in bg-card/50 backdrop-blur overflow-hidden"
@@ -328,8 +316,9 @@ const Index = () => {
                   </div>
                 </CardContent>
               </Card>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 

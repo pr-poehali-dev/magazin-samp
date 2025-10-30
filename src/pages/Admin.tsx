@@ -16,16 +16,20 @@ interface Product {
   price: string;
   description: string;
   icon: string;
+  gradient?: string;
 }
 
 interface Order {
   id: number;
-  customerName: string;
-  items: string;
-  total: string;
+  customer_name: string;
+  items: any;
+  total_price: number;
   status: string;
-  date: string;
+  created_at: string;
 }
+
+const PRODUCTS_API = 'https://functions.poehali.dev/663abff9-712f-46a8-bde0-86a764ef9c45';
+const ORDERS_API = 'https://functions.poehali.dev/eb4b86b7-416f-4dbe-9004-793dca0a233e';
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -36,30 +40,50 @@ const Admin = () => {
     title: '',
     price: '',
     description: '',
-    icon: 'Package'
+    icon: 'Package',
+    gradient: 'bg-gradient-primary'
   });
 
-  const [products, setProducts] = useState<Product[]>([
-    { id: 1, title: 'Готовый проект', price: '1000₽', description: 'Полностью готовый сервер SAMP', icon: 'Package' },
-    { id: 2, title: 'Мод Arizona RP', price: '250₽', description: 'Модификация для Arizona RP', icon: 'Gamepad2' },
-    { id: 3, title: 'Мод Rodina RP', price: '250₽', description: 'Модификация для Rodina RP', icon: 'Gamepad2' },
-    { id: 4, title: 'Логи', price: '200₽', description: 'Система логирования сервера', icon: 'FileText' },
-    { id: 5, title: 'Лаунчер PC', price: '200₽', description: 'Лаунчер для ПК', icon: 'Monitor' },
-    { id: 6, title: 'Лаунчер Mobile', price: '250₽', description: 'Мобильный лаунчер', icon: 'Smartphone' }
-  ]);
-
-  const [orders] = useState<Order[]>([
-    { id: 1, customerName: 'Иван Петров', items: 'VIP статус x1', total: '500₽', status: 'Выполнен', date: '2025-10-28' },
-    { id: 2, customerName: 'Мария Сидорова', items: 'Готовый проект x1', total: '1000₽', status: 'В обработке', date: '2025-10-29' },
-    { id: 3, customerName: 'Алексей Иванов', items: 'Мод Arizona RP x2', total: '500₽', status: 'Выполнен', date: '2025-10-30' }
-  ]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const isAuthenticated = localStorage.getItem('isAdminAuthenticated');
     if (!isAuthenticated) {
       navigate('/admin/login');
+    } else {
+      fetchProducts();
+      fetchOrders();
     }
   }, [navigate]);
+
+  const fetchProducts = async () => {
+    try {
+      const response = await fetch(PRODUCTS_API);
+      const data = await response.json();
+      setProducts(data.products);
+    } catch (error) {
+      console.error('Ошибка загрузки товаров:', error);
+      toast({
+        title: "Ошибка",
+        description: "Не удалось загрузить товары",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchOrders = async () => {
+    try {
+      const response = await fetch(ORDERS_API);
+      const data = await response.json();
+      setOrders(data.orders);
+    } catch (error) {
+      console.error('Ошибка загрузки заказов:', error);
+    }
+  };
 
   const handleLogout = () => {
     localStorage.removeItem('isAdminAuthenticated');
@@ -70,7 +94,7 @@ const Admin = () => {
     navigate('/admin/login');
   };
 
-  const handleAddProduct = () => {
+  const handleAddProduct = async () => {
     if (!newProduct.title || !newProduct.price || !newProduct.description) {
       toast({
         title: "Ошибка",
@@ -80,31 +104,60 @@ const Admin = () => {
       return;
     }
 
-    const product: Product = {
-      id: products.length + 1,
-      ...newProduct
-    };
+    try {
+      const response = await fetch(PRODUCTS_API, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newProduct),
+      });
 
-    setProducts([...products, product]);
-    setNewProduct({ title: '', price: '', description: '', icon: 'Package' });
-    setIsDialogOpen(false);
-    toast({
-      title: "Товар добавлен!",
-      description: `${product.title} успешно добавлен в каталог.`,
-    });
+      if (response.ok) {
+        await fetchProducts();
+        setNewProduct({ title: '', price: '', description: '', icon: 'Package', gradient: 'bg-gradient-primary' });
+        setIsDialogOpen(false);
+        toast({
+          title: "Товар добавлен!",
+          description: "Товар успешно добавлен в каталог.",
+        });
+      }
+    } catch (error) {
+      console.error('Ошибка добавления товара:', error);
+      toast({
+        title: "Ошибка",
+        description: "Не удалось добавить товар",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleDeleteProduct = (id: number) => {
-    setProducts(products.filter(p => p.id !== id));
-    toast({
-      title: "Товар удален",
-      description: "Товар успешно удален из каталога.",
-    });
+  const handleDeleteProduct = async (id: number) => {
+    try {
+      const response = await fetch(`${PRODUCTS_API}?id=${id}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        await fetchProducts();
+        toast({
+          title: "Товар удален",
+          description: "Товар успешно удален из каталога.",
+        });
+      }
+    } catch (error) {
+      console.error('Ошибка удаления товара:', error);
+      toast({
+        title: "Ошибка",
+        description: "Не удалось удалить товар",
+        variant: "destructive",
+      });
+    }
   };
 
   const stats = {
     totalOrders: orders.length,
-    totalRevenue: orders.reduce((sum, order) => sum + parseInt(order.total.replace('₽', '')), 0),
+    totalRevenue: orders.reduce((sum, order) => sum + order.total_price, 0),
     totalProducts: products.length,
     pendingOrders: orders.filter(o => o.status === 'В обработке').length
   };
@@ -299,9 +352,13 @@ const Admin = () => {
                     {orders.map((order) => (
                       <TableRow key={order.id}>
                         <TableCell className="font-medium">{order.id}</TableCell>
-                        <TableCell>{order.customerName}</TableCell>
-                        <TableCell>{order.items}</TableCell>
-                        <TableCell className="font-semibold text-primary">{order.total}</TableCell>
+                        <TableCell>{order.customer_name}</TableCell>
+                        <TableCell>
+                          {Array.isArray(order.items) 
+                            ? order.items.map((item: any) => `${item.title} x${item.quantity}`).join(', ')
+                            : 'Нет товаров'}
+                        </TableCell>
+                        <TableCell className="font-semibold text-primary">{order.total_price}₽</TableCell>
                         <TableCell>
                           <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
                             order.status === 'Выполнен' 
@@ -311,7 +368,7 @@ const Admin = () => {
                             {order.status}
                           </span>
                         </TableCell>
-                        <TableCell>{order.date}</TableCell>
+                        <TableCell>{new Date(order.created_at).toLocaleDateString('ru-RU')}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
