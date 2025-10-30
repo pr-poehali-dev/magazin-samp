@@ -4,12 +4,23 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import Icon from '@/components/ui/icon';
+
+interface CartItem {
+  id: number;
+  title: string;
+  price: string;
+  quantity: number;
+}
 
 const Index = () => {
   const [activeSection, setActiveSection] = useState('home');
   const [formData, setFormData] = useState({ name: '', email: '', message: '' });
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [isCartOpen, setIsCartOpen] = useState(false);
   const { toast } = useToast();
 
   const donateItems = [
@@ -85,13 +96,58 @@ const Index = () => {
     setFormData({ name: '', email: '', message: '' });
   };
 
+  const addToCart = (item: { id: number; title: string; price: string }) => {
+    setCart(prevCart => {
+      const existingItem = prevCart.find(cartItem => cartItem.id === item.id);
+      if (existingItem) {
+        return prevCart.map(cartItem =>
+          cartItem.id === item.id
+            ? { ...cartItem, quantity: cartItem.quantity + 1 }
+            : cartItem
+        );
+      }
+      return [...prevCart, { ...item, quantity: 1 }];
+    });
+    toast({
+      title: "Добавлено в корзину!",
+      description: `${item.title} добавлен в вашу корзину.`,
+    });
+  };
+
+  const removeFromCart = (id: number) => {
+    setCart(prevCart => prevCart.filter(item => item.id !== id));
+  };
+
+  const updateQuantity = (id: number, change: number) => {
+    setCart(prevCart => {
+      return prevCart.map(item => {
+        if (item.id === id) {
+          const newQuantity = item.quantity + change;
+          return newQuantity > 0 ? { ...item, quantity: newQuantity } : item;
+        }
+        return item;
+      }).filter(item => item.quantity > 0);
+    });
+  };
+
+  const getTotalPrice = () => {
+    return cart.reduce((total, item) => {
+      const price = parseInt(item.price.replace('₽', ''));
+      return total + (price * item.quantity);
+    }, 0);
+  };
+
+  const getTotalItems = () => {
+    return cart.reduce((total, item) => total + item.quantity, 0);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <nav className="fixed top-0 w-full z-50 bg-background/80 backdrop-blur-lg border-b border-border">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold bg-gradient-primary text-gradient animate-gradient-shift bg-[length:200%_200%]">MOMENTO STORE</h1>
-            <div className="flex gap-6">
+            <div className="flex items-center gap-6">
               {['home', 'donate', 'faq', 'contacts'].map((section) => (
                 <button
                   key={section}
@@ -106,6 +162,79 @@ const Index = () => {
                   {section === 'contacts' && 'Контакты'}
                 </button>
               ))}
+              <Sheet open={isCartOpen} onOpenChange={setIsCartOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="outline" size="icon" className="relative">
+                    <Icon name="ShoppingCart" size={20} />
+                    {getTotalItems() > 0 && (
+                      <Badge className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 bg-gradient-primary border-0">
+                        {getTotalItems()}
+                      </Badge>
+                    )}
+                  </Button>
+                </SheetTrigger>
+                <SheetContent className="w-full sm:max-w-lg">
+                  <SheetHeader>
+                    <SheetTitle>Корзина</SheetTitle>
+                    <SheetDescription>
+                      {cart.length === 0 ? 'Ваша корзина пуста' : `Товаров в корзине: ${getTotalItems()}`}
+                    </SheetDescription>
+                  </SheetHeader>
+                  <div className="mt-8 space-y-4">
+                    {cart.map((item) => (
+                      <Card key={item.id} className="bg-card/50">
+                        <CardContent className="p-4">
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1">
+                              <h3 className="font-semibold">{item.title}</h3>
+                              <p className="text-sm text-muted-foreground mt-1">{item.price}</p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => updateQuantity(item.id, -1)}
+                              >
+                                <Icon name="Minus" size={14} />
+                              </Button>
+                              <span className="w-8 text-center font-semibold">{item.quantity}</span>
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => updateQuantity(item.id, 1)}
+                              >
+                                <Icon name="Plus" size={14} />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-destructive"
+                                onClick={() => removeFromCart(item.id)}
+                              >
+                                <Icon name="Trash2" size={14} />
+                              </Button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                  {cart.length > 0 && (
+                    <div className="absolute bottom-0 left-0 right-0 p-6 border-t bg-background">
+                      <div className="flex items-center justify-between mb-4">
+                        <span className="text-lg font-semibold">Итого:</span>
+                        <span className="text-2xl font-bold text-primary">{getTotalPrice()}₽</span>
+                      </div>
+                      <Button className="w-full bg-gradient-primary hover:opacity-90 text-white font-semibold">
+                        <Icon name="CreditCard" className="mr-2" size={20} />
+                        Оформить заказ
+                      </Button>
+                    </div>
+                  )}
+                </SheetContent>
+              </Sheet>
             </div>
           </div>
         </div>
@@ -189,7 +318,11 @@ const Index = () => {
                 <CardContent>
                   <div className="flex items-center justify-between">
                     <span className="text-3xl font-bold text-primary">{item.price}</span>
-                    <Button className={`${item.gradient} hover:opacity-90 text-white font-semibold`}>
+                    <Button 
+                      className={`${item.gradient} hover:opacity-90 text-white font-semibold`}
+                      onClick={() => addToCart(item)}
+                    >
+                      <Icon name="ShoppingCart" className="mr-2" size={18} />
                       Купить
                     </Button>
                   </div>
