@@ -253,7 +253,7 @@ const Index = () => {
                     <Icon name="Send" size={32} className="text-white" />
                   </div>
                   <CardTitle>Telegram</CardTitle>
-                  <CardDescription className="text-base">@sampstore_bot</CardDescription>
+                  <CardDescription className="text-base">@Sashamomento</CardDescription>
                 </CardHeader>
               </Card>
             </div>
