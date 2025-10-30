@@ -2,10 +2,15 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/hooks/use-toast';
 import Icon from '@/components/ui/icon';
 
 const Index = () => {
   const [activeSection, setActiveSection] = useState('home');
+  const [formData, setFormData] = useState({ name: '', email: '', message: '' });
+  const { toast } = useToast();
 
   const donateItems = [
     {
@@ -69,6 +74,15 @@ const Index = () => {
     setActiveSection(section);
     const element = document.getElementById(section);
     element?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    toast({
+      title: "Сообщение отправлено!",
+      description: "Мы свяжемся с вами в ближайшее время.",
+    });
+    setFormData({ name: '', email: '', message: '' });
   };
 
   return (
@@ -213,31 +227,79 @@ const Index = () => {
       </section>
 
       <section id="contacts" className="py-20 px-4 bg-muted/20">
-        <div className="container mx-auto max-w-2xl text-center">
-          <h2 className="text-5xl font-bold mb-4 bg-gradient-primary text-gradient animate-gradient-shift bg-[length:200%_200%]">
-            Контакты
-          </h2>
-          <p className="text-muted-foreground mb-12">Свяжитесь с нами удобным способом</p>
+        <div className="container mx-auto max-w-4xl">
+          <div className="text-center mb-12">
+            <h2 className="text-5xl font-bold mb-4 bg-gradient-primary text-gradient animate-gradient-shift bg-[length:200%_200%]">
+              Контакты
+            </h2>
+            <p className="text-muted-foreground">Свяжитесь с нами удобным способом</p>
+          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card className="border-primary/20 hover-scale bg-card/50 backdrop-blur">
-              <CardHeader>
-                <div className="w-16 h-16 rounded-xl bg-gradient-primary flex items-center justify-center mx-auto mb-4">
-                  <Icon name="MessageCircle" size={32} className="text-white" />
-                </div>
-                <CardTitle>Discord</CardTitle>
-                <CardDescription className="text-base">discord.gg/sampstore</CardDescription>
-              </CardHeader>
-            </Card>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="space-y-6">
+              <Card className="border-primary/20 hover-scale bg-card/50 backdrop-blur">
+                <CardHeader>
+                  <div className="w-16 h-16 rounded-xl bg-gradient-primary flex items-center justify-center mx-auto mb-4">
+                    <Icon name="MessageCircle" size={32} className="text-white" />
+                  </div>
+                  <CardTitle>Discord</CardTitle>
+                  <CardDescription className="text-base">discord.gg/sampstore</CardDescription>
+                </CardHeader>
+              </Card>
 
-            <Card className="border-secondary/20 hover-scale bg-card/50 backdrop-blur">
+              <Card className="border-secondary/20 hover-scale bg-card/50 backdrop-blur">
+                <CardHeader>
+                  <div className="w-16 h-16 rounded-xl bg-gradient-secondary flex items-center justify-center mx-auto mb-4">
+                    <Icon name="Send" size={32} className="text-white" />
+                  </div>
+                  <CardTitle>Telegram</CardTitle>
+                  <CardDescription className="text-base">@sampstore_bot</CardDescription>
+                </CardHeader>
+              </Card>
+            </div>
+
+            <Card className="border-accent/20 bg-card/50 backdrop-blur">
               <CardHeader>
-                <div className="w-16 h-16 rounded-xl bg-gradient-secondary flex items-center justify-center mx-auto mb-4">
-                  <Icon name="Send" size={32} className="text-white" />
-                </div>
-                <CardTitle>Telegram</CardTitle>
-                <CardDescription className="text-base">@sampstore_bot</CardDescription>
+                <CardTitle className="text-2xl">Форма обратной связи</CardTitle>
+                <CardDescription>Напишите нам, и мы ответим в течение 24 часов</CardDescription>
               </CardHeader>
+              <CardContent>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div>
+                    <Input
+                      placeholder="Ваше имя"
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      required
+                      className="bg-background/50"
+                    />
+                  </div>
+                  <div>
+                    <Input
+                      type="email"
+                      placeholder="Email"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      required
+                      className="bg-background/50"
+                    />
+                  </div>
+                  <div>
+                    <Textarea
+                      placeholder="Ваше сообщение"
+                      value={formData.message}
+                      onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                      required
+                      rows={5}
+                      className="bg-background/50"
+                    />
+                  </div>
+                  <Button type="submit" className="w-full bg-gradient-accent hover:opacity-90 text-white font-semibold">
+                    <Icon name="Send" className="mr-2" size={20} />
+                    Отправить
+                  </Button>
+                </form>
+              </CardContent>
             </Card>
           </div>
         </div>
