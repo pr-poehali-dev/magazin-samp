@@ -37,9 +37,30 @@ interface User {
   created_at: string;
 }
 
+interface AdminUser {
+  id: number;
+  username: string;
+  email: string;
+  role: string;
+  is_active: boolean;
+  created_at: string;
+}
+
+interface AuthLog {
+  id: number;
+  user_id: number | null;
+  username: string;
+  action: string;
+  ip_address: string;
+  user_agent: string;
+  status: string;
+  created_at: string;
+}
+
 const PRODUCTS_API = 'https://functions.poehali.dev/663abff9-712f-46a8-bde0-86a764ef9c45';
 const ORDERS_API = 'https://functions.poehali.dev/eb4b86b7-416f-4dbe-9004-793dca0a233e';
 const USERS_API = 'https://functions.poehali.dev/7958df4e-db92-476f-8311-71dd6d961e2e';
+const ADMINS_API = 'https://functions.poehali.dev/cda1d047-4908-491c-8603-cf39dffad0b3';
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -57,10 +78,14 @@ const Admin = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  const [admins, setAdmins] = useState<AdminUser[]>([]);
+  const [authLogs, setAuthLogs] = useState<AuthLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [balanceDialogOpen, setBalanceDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [balanceAmount, setBalanceAmount] = useState('');
+  const [adminDialogOpen, setAdminDialogOpen] = useState(false);
+  const [newAdmin, setNewAdmin] = useState({ username: '', password: '', email: '', role: 'admin' });
 
   useEffect(() => {
     const isAuthenticated = localStorage.getItem('isAdminAuthenticated');
@@ -70,6 +95,8 @@ const Admin = () => {
       fetchProducts();
       fetchOrders();
       fetchUsers();
+      fetchAdmins();
+      fetchAuthLogs();
     }
   }, [navigate]);
 
@@ -112,6 +139,90 @@ const Admin = () => {
         description: "Не удалось загрузить пользователей",
         variant: "destructive",
       });
+    }
+  };
+
+  const fetchAdmins = async () => {
+    try {
+      const response = await fetch(ADMINS_API);
+      const data = await response.json();
+      setAdmins(data.admins);
+    } catch (error) {
+      console.error('Ошибка загрузки админов:', error);
+    }
+  };
+
+  const fetchAuthLogs = async () => {
+    try {
+      const response = await fetch(`${ADMINS_API}?action=logs&limit=50`);
+      const data = await response.json();
+      setAuthLogs(data.logs || []);
+    } catch (error) {
+      console.error('Ошибка загрузки логов:', error);
+    }
+  };
+
+  const handleAddAdmin = async () => {
+    if (!newAdmin.username || !newAdmin.password) {
+      toast({
+        title: "Ошибка",
+        description: "Заполните логин и пароль",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const response = await fetch(ADMINS_API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newAdmin),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast({
+          title: "Успешно!",
+          description: "Администратор добавлен",
+        });
+        setAdminDialogOpen(false);
+        setNewAdmin({ username: '', password: '', email: '', role: 'admin' });
+        fetchAdmins();
+      } else {
+        toast({
+          title: "Ошибка",
+          description: data.error || "Не удалось добавить администратора",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Ошибка добавления админа:', error);
+      toast({
+        title: "Ошибка",
+        description: "Не удалось добавить администратора",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const toggleAdminStatus = async (id: number, isActive: boolean) => {
+    try {
+      const response = await fetch(ADMINS_API, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, is_active: !isActive }),
+      });
+
+      if (response.ok) {
+        toast({
+          title: "Успешно!",
+          description: "Статус администратора изменен",
+        });
+        fetchAdmins();
+      }
+    } catch (error) {
+      console.error('Ошибка изменения статуса:', error);
     }
   };
 
@@ -337,10 +448,12 @@ const Admin = () => {
         </div>
 
         <Tabs defaultValue="products" className="space-y-6">
-          <TabsList className="grid w-full max-w-2xl grid-cols-3">
+          <TabsList className="grid w-full max-w-4xl grid-cols-5">
             <TabsTrigger value="products">Товары</TabsTrigger>
             <TabsTrigger value="orders">Заказы</TabsTrigger>
             <TabsTrigger value="users">Пользователи</TabsTrigger>
+            <TabsTrigger value="admins">Админы</TabsTrigger>
+            <TabsTrigger value="logs">Логи</TabsTrigger>
           </TabsList>
 
           <TabsContent value="products" className="space-y-4">
@@ -554,6 +667,174 @@ const Admin = () => {
                     ))}
                   </TableBody>
                 </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="admins" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Администраторы</CardTitle>
+                    <CardDescription>Управление администраторами системы</CardDescription>
+                  </div>
+                  <Dialog open={adminDialogOpen} onOpenChange={setAdminDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button className="bg-gradient-primary text-white">
+                        <Icon name="UserPlus" className="mr-2" size={18} />
+                        Добавить админа
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Добавить администратора</DialogTitle>
+                        <DialogDescription>Создайте нового администратора</DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4 py-4">
+                        <div>
+                          <label className="text-sm font-medium">Логин</label>
+                          <Input
+                            placeholder="admin123"
+                            value={newAdmin.username}
+                            onChange={(e) => setNewAdmin({ ...newAdmin, username: e.target.value })}
+                            className="mt-1"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium">Пароль</label>
+                          <Input
+                            type="password"
+                            placeholder="••••••••"
+                            value={newAdmin.password}
+                            onChange={(e) => setNewAdmin({ ...newAdmin, password: e.target.value })}
+                            className="mt-1"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium">Email</label>
+                          <Input
+                            type="email"
+                            placeholder="admin@example.com"
+                            value={newAdmin.email}
+                            onChange={(e) => setNewAdmin({ ...newAdmin, email: e.target.value })}
+                            className="mt-1"
+                          />
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button variant="outline" onClick={() => setAdminDialogOpen(false)} className="flex-1">
+                          Отмена
+                        </Button>
+                        <Button onClick={handleAddAdmin} className="flex-1 bg-gradient-primary text-white">
+                          Создать
+                        </Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>ID</TableHead>
+                      <TableHead>Логин</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Роль</TableHead>
+                      <TableHead>Статус</TableHead>
+                      <TableHead>Дата создания</TableHead>
+                      <TableHead>Действия</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {admins.map((admin) => (
+                      <TableRow key={admin.id}>
+                        <TableCell className="font-medium">{admin.id}</TableCell>
+                        <TableCell>{admin.username}</TableCell>
+                        <TableCell>{admin.email || '—'}</TableCell>
+                        <TableCell>
+                          <span className="px-2 py-1 rounded-full text-xs font-semibold bg-primary/20 text-primary">
+                            {admin.role}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                            admin.is_active 
+                              ? 'bg-green-500/20 text-green-500' 
+                              : 'bg-red-500/20 text-red-500'
+                          }`}>
+                            {admin.is_active ? 'Активен' : 'Заблокирован'}
+                          </span>
+                        </TableCell>
+                        <TableCell>{new Date(admin.created_at).toLocaleDateString('ru-RU')}</TableCell>
+                        <TableCell>
+                          <Button 
+                            size="sm"
+                            variant={admin.is_active ? 'destructive' : 'default'}
+                            onClick={() => toggleAdminStatus(admin.id, admin.is_active)}
+                          >
+                            <Icon name={admin.is_active ? 'Ban' : 'CheckCircle'} className="mr-1" size={14} />
+                            {admin.is_active ? 'Блокировать' : 'Разблокировать'}
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="logs" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Логи авторизации</CardTitle>
+                <CardDescription>История входов пользователей в систему</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Дата и время</TableHead>
+                      <TableHead>Пользователь</TableHead>
+                      <TableHead>Действие</TableHead>
+                      <TableHead>IP адрес</TableHead>
+                      <TableHead>Статус</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {authLogs.map((log) => (
+                      <TableRow key={log.id}>
+                        <TableCell className="font-medium">
+                          {new Date(log.created_at).toLocaleString('ru-RU')}
+                        </TableCell>
+                        <TableCell>{log.username}</TableCell>
+                        <TableCell>
+                          <span className="px-2 py-1 rounded-full text-xs font-semibold bg-blue-500/20 text-blue-500">
+                            {log.action}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">{log.ip_address || '—'}</TableCell>
+                        <TableCell>
+                          <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                            log.status === 'success' 
+                              ? 'bg-green-500/20 text-green-500' 
+                              : 'bg-red-500/20 text-red-500'
+                          }`}>
+                            {log.status === 'success' ? 'Успешно' : 'Ошибка'}
+                          </span>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                {authLogs.length === 0 && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Icon name="Inbox" size={48} className="mx-auto mb-4 opacity-50" />
+                    <p>Логов пока нет</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
