@@ -18,7 +18,7 @@ const AdminLogin = () => {
     setIsLoading(true);
 
     setTimeout(() => {
-      if (username === 'admin' && password === 'admin123') {
+      if (username === 'admin' && password === 'secure2024') {
         localStorage.setItem('isAdminAuthenticated', 'true');
         toast({
           title: "Успешный вход!",
