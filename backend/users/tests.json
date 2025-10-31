@@ -7,15 +7,24 @@
       "expectedStatus": 200
     },
     {
-      "name": "Update user status",
+      "name": "Telegram bot webhook",
       "method": "POST",
       "path": "/",
       "body": {
-        "action": "update_status",
-        "user_id": 2,
-        "status": "active"
+        "update_id": 123456,
+        "message": {
+          "chat": {"id": 123},
+          "from": {"id": 123, "first_name": "Test"},
+          "text": "/help"
+        }
       },
       "expectedStatus": 200
+    },
+    {
+      "name": "Verify auth without token",
+      "method": "GET",
+      "path": "/?action=verify",
+      "expectedStatus": 401
     }
   ]
 }
