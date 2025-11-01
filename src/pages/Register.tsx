@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
 
 const Register = () => {
-  const telegramBotUrl = 'https://t.me/YOUR_BOT_USERNAME';
+  const telegramBotUrl = 'https://t.me/MOMENTOGAMES_BOT';
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900 flex items-center justify-center p-4">
