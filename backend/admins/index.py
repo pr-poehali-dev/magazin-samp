@@ -41,6 +41,20 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             params = event.get('queryStringParameters', {}) or {}
             action = params.get('action', 'admins')
             
+            if action == 'site_status':
+                cursor.execute(
+                    "SELECT site_enabled FROM t_p8741694_magazin_samp.admins LIMIT 1"
+                )
+                result = cursor.fetchone()
+                site_enabled = result['site_enabled'] if result else True
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'isBase64Encoded': False,
+                    'body': json.dumps({'site_enabled': site_enabled})
+                }
+            
             if action == 'logs':
                 limit = int(params.get('limit', 100))
                 cursor.execute(
@@ -143,6 +157,24 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         
         elif method == 'PUT':
             body_data = json.loads(event.get('body', '{}'))
+            action = body_data.get('action')
+            
+            if action == 'toggle_site':
+                site_enabled = body_data.get('site_enabled', True)
+                
+                cursor.execute(
+                    "UPDATE t_p8741694_magazin_samp.admins SET site_enabled = %s",
+                    (site_enabled,)
+                )
+                conn.commit()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'isBase64Encoded': False,
+                    'body': json.dumps({'success': True, 'site_enabled': site_enabled})
+                }
+            
             admin_id = body_data.get('id')
             is_active = body_data.get('is_active')
             
@@ -155,7 +187,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 }
             
             cursor.execute(
-                "UPDATE admins SET is_active = %s WHERE id = %s RETURNING id",
+                "UPDATE t_p8741694_magazin_samp.admins SET is_active = %s WHERE id = %s RETURNING id",
                 (is_active, admin_id)
             )
             result = cursor.fetchone()

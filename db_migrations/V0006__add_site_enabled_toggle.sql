@@ -1,0 +1,1 @@
+ALTER TABLE t_p8741694_magazin_samp.admins ADD COLUMN IF NOT EXISTS site_enabled BOOLEAN DEFAULT TRUE;

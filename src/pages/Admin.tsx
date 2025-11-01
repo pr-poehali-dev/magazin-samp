@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import Icon from '@/components/ui/icon';
+import SiteToggle from '@/components/SiteToggle';
 
 interface Product {
   id: number;
@@ -375,6 +376,7 @@ const Admin = () => {
               Админ-панель
             </h1>
             <div className="flex items-center gap-4">
+              <SiteToggle />
               <Button variant="outline" onClick={() => navigate('/')}>
                 <Icon name="Home" className="mr-2" size={18} />
                 На главную
