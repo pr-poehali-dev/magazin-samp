@@ -31,7 +31,17 @@ interface Transaction {
   created_at: string;
 }
 
+interface Purchase {
+  id: number;
+  customer_name: string;
+  items: any;
+  total_price: number;
+  status: string;
+  created_at: string;
+}
+
 const BALANCE_API = 'https://functions.poehali.dev/3b3637f1-eac4-4faa-b9e4-4fbe71007e7c';
+const USERS_API = 'https://functions.poehali.dev/7958df4e-db92-476f-8311-71dd6d961e2e';
 
 const UserProfile = () => {
   const [searchParams] = useSearchParams();
@@ -39,15 +49,19 @@ const UserProfile = () => {
   const [username, setUsername] = useState('');
   const [balance, setBalance] = useState(0);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [depositAmount, setDepositAmount] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isDepositOpen, setIsDepositOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
     fetchUserBalance();
     fetchTransactions();
+    fetchPurchases();
   }, [userId]);
 
   const fetchUserBalance = async () => {
@@ -73,6 +87,85 @@ const UserProfile = () => {
       setTransactions(data.transactions);
     } catch (error) {
       console.error('Ошибка загрузки транзакций:', error);
+    }
+  };
+
+  const fetchPurchases = async () => {
+    try {
+      const response = await fetch(`${USERS_API}?user_id=${userId}&action=purchases`);
+      const data = await response.json();
+      setPurchases(data.purchases || []);
+    } catch (error) {
+      console.error('Ошибка загрузки покупок:', error);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch(USERS_API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'delete_account',
+          user_id: parseInt(userId)
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast({
+          title: "Аккаунт удален",
+          description: "Ваш аккаунт успешно удален",
+        });
+        navigate('/');
+      }
+    } catch (error) {
+      console.error('Ошибка удаления аккаунта:', error);
+      toast({
+        title: "Ошибка",
+        description: "Не удалось удалить аккаунт",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+      setIsDeleteDialogOpen(false);
+    }
+  };
+
+  const handleResetBalance = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch(USERS_API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'reset_balance',
+          user_id: parseInt(userId)
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setBalance(0);
+        toast({
+          title: "Баланс обнулен",
+          description: "Ваш баланс успешно обнулен",
+        });
+        fetchTransactions();
+      }
+    } catch (error) {
+      console.error('Ошибка обнуления баланса:', error);
+      toast({
+        title: "Ошибка",
+        description: "Не удалось обнулить баланс",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+      setIsResetDialogOpen(false);
     }
   };
 
@@ -239,6 +332,126 @@ const UserProfile = () => {
                   </DialogContent>
                 </Dialog>
               </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-card/50 backdrop-blur">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Настройки аккаунта</CardTitle>
+                  <CardDescription>Управление вашим аккаунтом</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <Dialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" className="w-full justify-start">
+                      <Icon name="RotateCcw" className="mr-2" size={18} />
+                      Обнулить баланс
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Обнулить баланс</DialogTitle>
+                      <DialogDescription>
+                        Вы уверены, что хотите обнулить свой баланс? Это действие нельзя отменить.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="flex gap-2 pt-4">
+                      <Button variant="outline" onClick={() => setIsResetDialogOpen(false)} className="flex-1">
+                        Отмена
+                      </Button>
+                      <Button 
+                        variant="destructive" 
+                        onClick={handleResetBalance} 
+                        disabled={isLoading}
+                        className="flex-1"
+                      >
+                        {isLoading ? 'Обнуление...' : 'Обнулить'}
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+
+                <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="destructive" className="w-full justify-start">
+                      <Icon name="Trash2" className="mr-2" size={18} />
+                      Удалить аккаунт
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Удалить аккаунт</DialogTitle>
+                      <DialogDescription>
+                        Вы уверены, что хотите удалить свой аккаунт? Все данные будут безвозвратно удалены.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="flex gap-2 pt-4">
+                      <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)} className="flex-1">
+                        Отмена
+                      </Button>
+                      <Button 
+                        variant="destructive" 
+                        onClick={handleDeleteAccount} 
+                        disabled={isLoading}
+                        className="flex-1"
+                      >
+                        {isLoading ? 'Удаление...' : 'Удалить'}
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Мои покупки</CardTitle>
+              <CardDescription>История ваших покупок</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {purchases.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Icon name="ShoppingBag" size={48} className="mx-auto mb-2 opacity-50" />
+                  <p>У вас пока нет покупок</p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>ID</TableHead>
+                      <TableHead>Товары</TableHead>
+                      <TableHead>Сумма</TableHead>
+                      <TableHead>Статус</TableHead>
+                      <TableHead>Дата</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {purchases.map((purchase) => (
+                      <TableRow key={purchase.id}>
+                        <TableCell className="font-medium">#{purchase.id}</TableCell>
+                        <TableCell>
+                          {Array.isArray(purchase.items)
+                            ? purchase.items.map((item: any) => `${item.title} x${item.quantity}`).join(', ')
+                            : 'Нет данных'}
+                        </TableCell>
+                        <TableCell className="font-semibold text-primary">{purchase.total_price}₽</TableCell>
+                        <TableCell>
+                          <Badge variant={purchase.status === 'Выполнен' ? 'default' : 'secondary'}>
+                            {purchase.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{formatDate(purchase.created_at)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
 

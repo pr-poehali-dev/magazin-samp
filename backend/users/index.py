@@ -411,6 +411,36 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'body': json.dumps({'ticket_id': ticket_id, 'status': 'created'})
             }
     
+    if action == 'purchases':
+        user_id_param = params.get('user_id')
+        
+        if not user_id_param:
+            cursor.close()
+            conn.close()
+            return {
+                'statusCode': 400,
+                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'error': 'User ID required'})
+            }
+        
+        cursor.execute(
+            f"""SELECT o.id, o.customer_name, o.items, o.total_price, o.status, o.created_at
+            FROM {SCHEMA}.orders o
+            WHERE o.user_id = %s
+            ORDER BY o.created_at DESC""",
+            (user_id_param,)
+        )
+        purchases = cursor.fetchall()
+        
+        cursor.close()
+        conn.close()
+        
+        return {
+            'statusCode': 200,
+            'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+            'body': json.dumps({'purchases': [dict(p) for p in purchases]}, default=decimal_to_float)
+        }
+    
     if method == 'GET':
         cursor.execute(
             f'SELECT id, username, email, balance, status, created_at FROM {SCHEMA}.users ORDER BY created_at DESC'
@@ -461,6 +491,62 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'user_id': result['id'],
                     'new_balance': float(result['balance'])
                 }, default=decimal_to_float)
+            }
+        
+        elif action_type == 'delete_account':
+            user_id_target = body_data.get('user_id')
+            
+            if not user_id_target:
+                cursor.close()
+                conn.close()
+                return {
+                    'statusCode': 400,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'error': 'User ID required'})
+                }
+            
+            cursor.execute(f"DELETE FROM {SCHEMA}.user_sessions WHERE user_id = %s", (user_id_target,))
+            cursor.execute(f"DELETE FROM {SCHEMA}.balance_transactions WHERE user_id = %s", (user_id_target,))
+            cursor.execute(f"DELETE FROM {SCHEMA}.users WHERE id = %s", (user_id_target,))
+            conn.commit()
+            
+            cursor.close()
+            conn.close()
+            
+            return {
+                'statusCode': 200,
+                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'success': True, 'message': 'Account deleted'})
+            }
+        
+        elif action_type == 'reset_balance':
+            user_id_target = body_data.get('user_id')
+            
+            if not user_id_target:
+                cursor.close()
+                conn.close()
+                return {
+                    'statusCode': 400,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'error': 'User ID required'})
+                }
+            
+            cursor.execute(f"UPDATE {SCHEMA}.users SET balance = 0 WHERE id = %s", (user_id_target,))
+            cursor.execute(
+                f"""INSERT INTO {SCHEMA}.balance_transactions 
+                (user_id, amount, type, description, created_at) 
+                VALUES (%s, %s, %s, %s, %s)""",
+                (user_id_target, 0, 'reset', 'Обнуление баланса', datetime.now())
+            )
+            conn.commit()
+            
+            cursor.close()
+            conn.close()
+            
+            return {
+                'statusCode': 200,
+                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'success': True, 'balance': 0})
             }
         
         elif action_type == 'update_status':
